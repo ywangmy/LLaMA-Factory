@@ -27,6 +27,16 @@ def run_dpo(
     tokenizer_module = load_tokenizer(model_args)
     tokenizer = tokenizer_module["tokenizer"]
     dataset = get_dataset(model_args, data_args, training_args, stage="rm", **tokenizer_module)
+    # print("Dataset loaded")
+    # tokenizer = tokenizer_module["tokenizer"]
+    # # Print the first 5 samples
+    # for i, sample in enumerate(dataset):
+    #     print(f"Sample {i}: {sample}")
+    #     print(f'### Chosen:\n', tokenizer.decode(sample['chosen_input_ids'], skip_special_tokens=False))
+    #     print(f'### Rejected:\n', tokenizer.decode(sample['rejected_input_ids'], skip_special_tokens=False))
+    #     if i == 4:  # Change this number to print more or fewer samples
+    #         break
+    # exit()
     model = load_model(tokenizer, model_args, finetuning_args, training_args.do_train)
 
     data_collator = PairwiseDataCollatorWithPadding(
@@ -36,13 +46,10 @@ def run_dpo(
     )
 
     # Create reference model
-    if finetuning_args.use_ref_model:
-        if finetuning_args.ref_model is None and (not training_args.do_train):  # use the model itself
-            ref_model = model
-        else:
-            ref_model = create_ref_model(model_args, finetuning_args)
+    if finetuning_args.ref_model is None and (not training_args.do_train):  # use the model itself
+        ref_model = model
     else:
-        ref_model = None
+        ref_model = create_ref_model(model_args, finetuning_args)
 
     # Update arguments
     training_args.remove_unused_columns = False  # important for pairwise dataset
@@ -72,7 +79,7 @@ def run_dpo(
     # Evaluation
     if training_args.do_eval:
         metrics = trainer.evaluate(metric_key_prefix="eval")
-        if id(model) == id(ref_model):  # unable to compute rewards if reference model is the model itself
+        if id(model) == id(ref_model):  # unable to compute rewards without a reference model
             remove_keys = [key for key in metrics.keys() if "rewards" in key]
             for key in remove_keys:
                 metrics.pop(key)
