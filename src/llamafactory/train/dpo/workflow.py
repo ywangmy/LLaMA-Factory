@@ -27,16 +27,18 @@ def run_dpo(
     tokenizer_module = load_tokenizer(model_args)
     tokenizer = tokenizer_module["tokenizer"]
     dataset = get_dataset(model_args, data_args, training_args, stage="rm", **tokenizer_module)
-    # print("Dataset loaded")
-    # tokenizer = tokenizer_module["tokenizer"]
-    # # Print the first 5 samples
-    # for i, sample in enumerate(dataset):
-    #     print(f"Sample {i}: {sample}")
-    #     print(f'### Chosen:\n', tokenizer.decode(sample['chosen_input_ids'], skip_special_tokens=False))
-    #     print(f'### Rejected:\n', tokenizer.decode(sample['rejected_input_ids'], skip_special_tokens=False))
-    #     if i == 4:  # Change this number to print more or fewer samples
-    #         break
-    # exit()
+    print("Dataset loaded")
+    tokenizer = tokenizer_module["tokenizer"]
+    # Print the first 5 samples
+    for i, sample in enumerate(dataset):
+        print(f"Sample {i}: {sample}")
+        print(f'### Chosen:\n', tokenizer.decode(sample['chosen_input_ids'], skip_special_tokens=False))
+        print(f'### Chosen attn_mask:\n', sample['chosen_attention_mask'])
+        print(f'### Rejected:\n', tokenizer.decode(sample['rejected_input_ids'], skip_special_tokens=False))
+        print(f'### Rejected attn_mask:\n', sample['rejected_attention_mask'])
+        if i == 2:  # Change this number to print more or fewer samples
+            break
+    exit()
     model = load_model(tokenizer, model_args, finetuning_args, training_args.do_train)
 
     data_collator = PairwiseDataCollatorWithPadding(

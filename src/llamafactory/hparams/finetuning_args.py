@@ -121,6 +121,10 @@ class RLHFArguments:
         default=0.1,
         metadata={"help": "The beta parameter in the preference loss."},
     )
+    pref_length_penalty_alpha: float = field(
+        default=0.0,
+        metadata={"help": "The lenght penalty alpha parameter in the preference loss."},
+    )
     pref_ftx: float = field(
         default=0.0,
         metadata={"help": "The supervised fine-tuning loss coefficient in DPO training."},

@@ -52,6 +52,7 @@ class CustomDPOTrainer(DPOTrainer):
 
         # dpo hyperparams
         self.beta = finetuning_args.pref_beta
+        self.length_penalty_alpha = finetuning_args.pref_length_penalty_alpha
         self.loss_type = finetuning_args.pref_loss
         self.ftx_gamma = finetuning_args.pref_ftx
         self.label_smoothing = finetuning_args.dpo_label_smoothing
@@ -126,12 +127,101 @@ class CustomDPOTrainer(DPOTrainer):
         simpo_loss = -F.logsigmoid(self.beta * logits)
         return simpo_loss
 
+    def dpo_loss(
+        self,
+        policy_chosen_logps: torch.FloatTensor,
+        policy_rejected_logps: torch.FloatTensor,
+        reference_chosen_logps: torch.FloatTensor,
+        reference_rejected_logps: torch.FloatTensor,
+        chosen_length: Optional["torch.Tensor"],
+        rejected_length: Optional["torch.Tensor"],
+    ) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
+        """Compute the DPO loss for a batch of policy and reference model log probabilities.
+
+        Args:
+            policy_chosen_logps: Log probabilities of the policy model for the chosen responses. Shape: (batch_size,)
+            policy_rejected_logps: Log probabilities of the policy model for the rejected responses. Shape: (batch_size,)
+            reference_chosen_logps: Log probabilities of the reference model for the chosen responses. Shape: (batch_size,)
+            reference_rejected_logps: Log probabilities of the reference model for the rejected responses. Shape: (batch_size,)
+
+        Returns:
+            A tuple of three tensors: (losses, chosen_rewards, rejected_rewards).
+            The losses tensor contains the DPO loss for each example in the batch.
+            The chosen_rewards and rejected_rewards tensors contain the rewards for the chosen and rejected responses, respectively.
+        """
+        pi_logratios = policy_chosen_logps - policy_rejected_logps
+        if self.reference_free:
+            ref_logratios = torch.tensor([0], dtype=pi_logratios.dtype, device=pi_logratios.device)
+        else:
+            ref_logratios = reference_chosen_logps - reference_rejected_logps
+
+        pi_logratios = pi_logratios.to(self.accelerator.device)
+        ref_logratios = ref_logratios.to(self.accelerator.device)
+        logits = pi_logratios - ref_logratios
+
+        # The beta is a temperature parameter for the DPO loss, typically something in the range of 0.1 to 0.5.
+        # We ignore the reference model as beta -> 0. The label_smoothing parameter encodes our uncertainty about the labels and
+        # calculates a conservative DPO loss.
+        if self.loss_type == "sigmoid":
+            losses = (
+                -F.logsigmoid(self.beta * logits) * (1 - self.label_smoothing)
+                - F.logsigmoid(-self.beta * logits) * self.label_smoothing
+            )
+        elif self.loss_type == "rdpo":
+            length_penalty = chosen_length - rejected_length
+            losses = (
+                -F.logsigmoid(self.beta * logits - self.length_penalty_alpha * length_penalty) * (1 - self.label_smoothing)
+                - F.logsigmoid(-self.beta * logits + self.length_penalty_alpha * length_penalty) * self.label_smoothing
+            )
+        elif self.loss_type == "hinge":
+            losses = torch.relu(1 - self.beta * logits)
+        elif self.loss_type == "ipo":
+            # eqn (17) of the paper where beta is the regularization parameter for the IPO loss, denoted by tau in the paper.
+            losses = (logits - 1 / (2 * self.beta)) ** 2
+        elif self.loss_type == "kto_pair":
+            # eqn (7) of the HALOs paper
+            chosen_KL = (policy_chosen_logps - reference_chosen_logps).mean().clamp(min=0)
+            rejected_KL = (policy_rejected_logps - reference_rejected_logps).mean().clamp(min=0)
+
+            chosen_logratios = policy_chosen_logps - reference_chosen_logps
+            rejected_logratios = policy_rejected_logps - reference_rejected_logps
+            # As described in the KTO report, the KL term for chosen (rejected) is estimated using the rejected (chosen) half.
+            losses = torch.cat(
+                (
+                    1 - F.sigmoid(self.beta * (chosen_logratios - rejected_KL)),
+                    1 - F.sigmoid(self.beta * (chosen_KL - rejected_logratios)),
+                ),
+                0,
+            )
+        else:
+            raise ValueError(
+                f"Unknown loss type: {self.loss_type}. Should be one of ['sigmoid', 'hinge', 'ipo', 'kto_pair']"
+            )
+
+        chosen_rewards = (
+            self.beta
+            * (
+                policy_chosen_logps.to(self.accelerator.device) - reference_chosen_logps.to(self.accelerator.device)
+            ).detach()
+        )
+        rejected_rewards = (
+            self.beta
+            * (
+                policy_rejected_logps.to(self.accelerator.device)
+                - reference_rejected_logps.to(self.accelerator.device)
+            ).detach()
+        )
+
+        return losses, chosen_rewards, rejected_rewards
+
     def compute_preference_loss(
         self,
         policy_chosen_logps: "torch.Tensor",
         policy_rejected_logps: "torch.Tensor",
         reference_chosen_logps: Optional["torch.Tensor"],
         reference_rejected_logps: Optional["torch.Tensor"],
+        chosen_length: Optional["torch.Tensor"],
+        rejected_length: Optional["torch.Tensor"],
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor"]:
         r"""
         Computes loss for preference learning.
@@ -147,10 +237,13 @@ class CustomDPOTrainer(DPOTrainer):
             chosen_rewards = self.beta * policy_chosen_logps.to(self.accelerator.device).detach()
             rejected_rewards = self.beta * policy_rejected_logps.to(self.accelerator.device).detach()
         else:
-            losses, chosen_rewards, rejected_rewards = self.dpo_loss(
-                policy_chosen_logps, policy_rejected_logps, reference_chosen_logps, reference_rejected_logps
-            )
-
+            if self.loss_type == "rdpo":
+                pass
+            else:
+                losses, chosen_rewards, rejected_rewards = self.dpo_loss(
+                    policy_chosen_logps, policy_rejected_logps, reference_chosen_logps, reference_rejected_logps,
+                    chosen_length, rejected_length
+                )
         return losses, chosen_rewards, rejected_rewards
 
     def concatenated_forward(
@@ -204,6 +297,19 @@ class CustomDPOTrainer(DPOTrainer):
 
         return reference_chosen_logps, reference_rejected_logps
 
+    def compute_length(
+        self,
+        model: "PreTrainedModel",
+        batch: Dict[str, "torch.Tensor"],
+    ):
+        print(f"### batch keys {batch.keys()}")
+        batch_size = batch["attention_mask"].size(0) // 2
+        print(f'### Chosen[0]:\n', batch['input_ids'][0])
+        print(f'### Rejected[0]:\n', sample['rejected_input_ids'][batch_size])
+        length = batch['attention_mask'].sum(dim=1)
+        chosen_length, rejected_length = length.split(batch_size, dim=0)
+        return chosen_length, rejected_length
+
     def get_batch_loss_metrics(
         self,
         model: "PreTrainedModel",
@@ -221,12 +327,16 @@ class CustomDPOTrainer(DPOTrainer):
             policy_rejected_logits,
         ) = self.concatenated_forward(model, batch)
 
+        chosen_length, rejected_length = self.compute_length(model, batch)
+
         reference_chosen_logps, reference_rejected_logps = self.compute_reference_log_probs(model, batch)
         losses, chosen_rewards, rejected_rewards = self.compute_preference_loss(
             policy_chosen_logps,
             policy_rejected_logps,
             reference_chosen_logps,
             reference_rejected_logps,
+            chosen_length,
+            rejected_length,
         )
         sft_loss = self.sft_loss(batch, policy_chosen_logits)  # compute chosen_logps with masks
         if self.ftx_gamma > 1e-6:
