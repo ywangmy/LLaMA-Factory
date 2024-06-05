@@ -302,11 +302,12 @@ class CustomDPOTrainer(DPOTrainer):
         model: "PreTrainedModel",
         batch: Dict[str, "torch.Tensor"],
     ):
-        print(f"### batch keys {batch.keys()}")
-        batch_size = batch["attention_mask"].size(0) // 2
-        print(f'### Chosen[0]:\n', batch['input_ids'][0])
-        print(f'### Rejected[0]:\n', sample['rejected_input_ids'][batch_size])
-        length = batch['attention_mask'].sum(dim=1)
+        batch_size = batch["labels"].size(0) // 2
+        # Reference: data.processors.pairwise.print_pairwise_dataset_example
+        # Create a boolean mask where elements are not equal to the token
+        valid_labels = (batch['labels'] != IGNORE_INDEX).detach()
+        # Sum up the elements of the mask
+        length = valid_labels.sum(dim=1)
         chosen_length, rejected_length = length.split(batch_size, dim=0)
         return chosen_length, rejected_length
 
