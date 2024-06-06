@@ -165,7 +165,7 @@ class CustomDPOTrainer(DPOTrainer):
         elif self.loss_type == "modpo":
             chosen_length_reward = - chosen_length
             rejected_length_reward = - rejected_length
-            losses = -F.logsigmoid(1/self.pref_modpo_omiga * (self.beta * logits - (1-self.modpo_omiga) * (chosen_length_reward - rejected_length_reward)))
+            losses = -F.logsigmoid(1/self.pref_modpo_omega * (self.beta * logits - (1-self.pref_modpo_omega) * (chosen_length_reward - rejected_length_reward)))
         elif self.loss_type == "robust":
             losses = (
                 -F.logsigmoid(self.beta * logits) * (1 - self.label_smoothing)
