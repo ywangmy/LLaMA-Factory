@@ -114,6 +114,10 @@ class RLHFArguments:
         default=0.0,
         metadata={"help": "The lenght penalty alpha parameter in the preference loss."},
     )
+    pref_modpo_omiga: float = field(
+        default=1.0,
+        metadata={"help": "The omiga factor in the MODPO."},
+    )
     pref_ftx: float = field(
         default=0.0,
         metadata={"help": "The supervised fine-tuning loss coefficient in DPO training."},
