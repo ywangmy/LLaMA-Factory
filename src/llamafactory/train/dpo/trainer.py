@@ -53,6 +53,7 @@ class CustomDPOTrainer(DPOTrainer):
         # dpo hyperparams
         self.beta = finetuning_args.pref_beta
         self.length_penalty_alpha = finetuning_args.pref_length_penalty_alpha
+        self.pref_modpo_omega = finetuning_args.pref_modpo_omega
         self.loss_type = finetuning_args.pref_loss
         self.ftx_gamma = finetuning_args.pref_ftx
         self.label_smoothing = finetuning_args.dpo_label_smoothing
