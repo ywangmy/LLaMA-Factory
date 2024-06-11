@@ -35,6 +35,8 @@ IGNORE_INDEX = -100
 
 LAYERNORM_NAMES = {"norm", "ln"}
 
+LLAMABOARD_CONFIG = "llamaboard_config.yaml"
+
 METHODS = ["full", "freeze", "lora"]
 
 MOD_SUPPORTED_MODELS = {"bloom", "falcon", "gemma", "llama", "mistral", "mixtral", "phi", "starcoder2"}
@@ -47,9 +49,9 @@ SUBJECTS = ["Average", "STEM", "Social Sciences", "Humanities", "Other"]
 
 SUPPORTED_MODELS = OrderedDict()
 
-TRAINER_CONFIG = "trainer_config.yaml"
-
 TRAINER_LOG = "trainer_log.jsonl"
+
+TRAINING_ARGS = "training_args.yaml"
 
 TRAINING_STAGES = {
     "Supervised Fine-Tuning": "sft",
@@ -1072,6 +1074,89 @@ register_model_group(
         "Qwen1.5-Code-7B-int4-Chat": {
             DownloadSource.DEFAULT: "Qwen/CodeQwen1.5-7B-Chat-AWQ",
             DownloadSource.MODELSCOPE: "qwen/CodeQwen1.5-7B-Chat-AWQ",
+        },
+    },
+    template="qwen",
+)
+
+
+register_model_group(
+    models={
+        "Qwen2-0.5B": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-0.5B",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-0.5B",
+        },
+        "Qwen2-1.5B": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-1.5B",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-1.5B",
+        },
+        "Qwen2-7B": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-7B",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-7B",
+        },
+        "Qwen2-72B": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-72B",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-72B",
+        },
+        "Qwen2-MoE-57B": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-57B-A14B",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-57B-A14B",
+        },
+        "Qwen2-0.5B-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-0.5B-Instruct",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-0.5B-Instruct",
+        },
+        "Qwen2-1.5B-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-1.5B-Instruct",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-1.5B-Instruct",
+        },
+        "Qwen2-7B-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-7B-Instruct",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-7B-Instruct",
+        },
+        "Qwen2-72B-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-72B-Instruct",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-72B-Instruct",
+        },
+        "Qwen2-MoE-57B-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-57B-A14B-Instruct",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-57B-A14B-Instruct",
+        },
+        "Qwen2-0.5B-int8-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-0.5B-Instruct-GPTQ-Int8",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-0.5B-Instruct-GPTQ-Int8",
+        },
+        "Qwen2-0.5B-int4-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-0.5B-Instruct-AWQ",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-0.5B-Instruct-AWQ",
+        },
+        "Qwen2-1.5B-int8-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-1.5B-Instruct-GPTQ-Int8",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-1.5B-Instruct-GPTQ-Int8",
+        },
+        "Qwen2-1.5B-int4-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-1.5B-Instruct-AWQ",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-1.5B-Instruct-AWQ",
+        },
+        "Qwen2-7B-int8-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-7B-Instruct-GPTQ-Int8",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-7B-Instruct-GPTQ-Int8",
+        },
+        "Qwen2-7B-int4-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-7B-Instruct-AWQ",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-7B-Instruct-AWQ",
+        },
+        "Qwen2-72B-int8-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-72B-Instruct-GPTQ-Int8",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-72B-Instruct-GPTQ-Int8",
+        },
+        "Qwen2-72B-int4-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-72B-Instruct-AWQ",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-72B-Instruct-AWQ",
+        },
+        "Qwen2-MoE-57B-int4-Chat": {
+            DownloadSource.DEFAULT: "Qwen/Qwen2-57B-A14B-Instruct-GPTQ-Int4",
+            DownloadSource.MODELSCOPE: "qwen/Qwen2-57B-A14B-Instruct-GPTQ-Int4",
         },
     },
     template="qwen",

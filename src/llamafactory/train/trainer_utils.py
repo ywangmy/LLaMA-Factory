@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
 
 import torch
 from transformers import Trainer
@@ -7,6 +7,7 @@ from transformers.optimization import get_scheduler
 from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
 from transformers.trainer_pt_utils import get_parameter_names
 
+from ..extras.constants import IGNORE_INDEX
 from ..extras.logging import get_logger
 from ..extras.packages import is_galore_available
 from ..hparams import FinetuningArguments, ModelArguments
@@ -82,15 +83,12 @@ def create_ref_model(
     The valuehead parameter is randomly initialized since it is useless for PPO training.
     """
     if finetuning_args.ref_model is not None:
-        ref_model_args_dict = model_args.to_dict()
-        ref_model_args_dict.update(
-            dict(
-                model_name_or_path=finetuning_args.ref_model,
-                adapter_name_or_path=finetuning_args.ref_model_adapters,
-                quantization_bit=finetuning_args.ref_model_quantization_bit,
-            )
+        ref_model_args = ModelArguments.copyfrom(
+            model_args,
+            model_name_or_path=finetuning_args.ref_model,
+            adapter_name_or_path=finetuning_args.ref_model_adapters,
+            quantization_bit=finetuning_args.ref_model_quantization_bit,
         )
-        ref_model_args = ModelArguments(**ref_model_args_dict)
         ref_finetuning_args = FinetuningArguments()
         tokenizer = load_tokenizer(ref_model_args)["tokenizer"]
         ref_model = load_model(
@@ -101,9 +99,11 @@ def create_ref_model(
         if finetuning_args.finetuning_type == "lora":
             ref_model = None
         else:
-            tokenizer = load_tokenizer(model_args)["tokenizer"]
+            ref_model_args = ModelArguments.copyfrom(model_args)
+            ref_finetuning_args = FinetuningArguments()
+            tokenizer = load_tokenizer(ref_model_args)["tokenizer"]
             ref_model = load_model(
-                tokenizer, model_args, finetuning_args, is_trainable=False, add_valuehead=add_valuehead
+                tokenizer, ref_model_args, ref_finetuning_args, is_trainable=False, add_valuehead=add_valuehead
             )
             logger.info("Created reference model from the model itself.")
 
@@ -138,15 +138,12 @@ def create_reward_model(
         logger.info("Loaded adapter weights of reward model from {}".format(finetuning_args.reward_model))
         return None
     else:
-        reward_model_args_dict = model_args.to_dict()
-        reward_model_args_dict.update(
-            dict(
-                model_name_or_path=finetuning_args.reward_model,
-                adapter_name_or_path=finetuning_args.reward_model_adapters,
-                quantization_bit=finetuning_args.reward_model_quantization_bit,
-            )
+        reward_model_args = ModelArguments.copyfrom(
+            model_args,
+            model_name_or_path=finetuning_args.reward_model,
+            adapter_name_or_path=finetuning_args.reward_model_adapters,
+            quantization_bit=finetuning_args.reward_model_quantization_bit,
         )
-        reward_model_args = ModelArguments(**reward_model_args_dict)
         reward_finetuning_args = FinetuningArguments()
         tokenizer = load_tokenizer(reward_model_args)["tokenizer"]
         reward_model = load_model(
@@ -399,3 +396,24 @@ def create_custom_scheduler(
 
         for param in optimizer_dict.keys():
             param.register_post_accumulate_grad_hook(scheduler_hook)
+
+
+def get_batch_logps(
+    logits: "torch.Tensor", labels: "torch.Tensor", label_pad_token_id: int = IGNORE_INDEX
+) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    r"""
+    Computes the log probabilities of the given labels under the given logits.
+
+    Returns:
+        logps: A tensor of shape (batch_size,) containing the sum of log probabilities.
+        valid_length: A tensor of shape (batch_size,) containing the number of non-masked tokens.
+    """
+    if logits.shape[:-1] != labels.shape:
+        raise ValueError("Logits (batchsize x seqlen) and labels must have the same shape.")
+
+    labels = labels[:, 1:].clone()
+    logits = logits[:, :-1, :]
+    loss_mask = labels != label_pad_token_id
+    labels[labels == label_pad_token_id] = 0  # dummy token
+    per_token_logps = torch.gather(logits.log_softmax(-1), dim=2, index=labels.unsqueeze(2)).squeeze(2)
+    return (per_token_logps * loss_mask).sum(-1), loss_mask.sum(-1)

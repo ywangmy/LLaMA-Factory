@@ -71,13 +71,15 @@ https://github.com/hiyouga/LLaMA-Factory/assets/16256802/ec36a9dd-37f4-4f72-81bd
 
 ## 更新日志
 
+[24/06/07] 我们支持了 **[Qwen-2](https://qwenlm.github.io/blog/qwen2/)** 系列模型的微调。
+
 [24/06/05] 我们支持了 **[GLM-4-9B/GLM-4-9B-Chat](https://github.com/THUDM/GLM-4)** 模型的微调。
 
 [24/05/26] 我们支持了 **[SimPO](https://arxiv.org/abs/2405.14734)** 偏好对齐算法。详细用法请参照 [examples](examples/README_zh.md)。
 
-[24/05/20] 我们支持了 **PaliGemma** 系列模型的微调。注意 PaliGemma 是预训练模型，你需要使用 `gemma` 模板进行微调使其获得对话能力。
-
 <details><summary>展开日志</summary>
+
+[24/05/20] 我们支持了 **PaliGemma** 系列模型的微调。注意 PaliGemma 是预训练模型，你需要使用 `gemma` 模板进行微调使其获得对话能力。
 
 [24/05/18] 我们支持了 **[KTO](https://arxiv.org/abs/2402.01306)** 偏好对齐算法。详细用法请参照 [examples](examples/README_zh.md)。
 
@@ -172,6 +174,7 @@ https://github.com/hiyouga/LLaMA-Factory/assets/16256802/ec36a9dd-37f4-4f72-81bd
 | [Phi-3](https://huggingface.co/microsoft)                | 4B/7B/14B                        | phi       |
 | [Qwen](https://huggingface.co/Qwen)                      | 1.8B/7B/14B/72B                  | qwen      |
 | [Qwen1.5 (Code/MoE)](https://huggingface.co/Qwen)        | 0.5B/1.8B/4B/7B/14B/32B/72B/110B | qwen      |
+| [Qwen2 (MoE)](https://huggingface.co/Qwen)               | 0.5B/1.5B/7B/57B/72B             | qwen      |
 | [StarCoder2](https://huggingface.co/bigcode)             | 3B/7B/15B                        | -         |
 | [XVERSE](https://huggingface.co/xverse)                  | 7B/13B/65B                       | xverse    |
 | [Yi (1/1.5)](https://huggingface.co/01-ai)               | 6B/9B/34B                        | yi        |
@@ -211,6 +214,8 @@ https://github.com/hiyouga/LLaMA-Factory/assets/16256802/ec36a9dd-37f4-4f72-81bd
 - [Wikipedia (zh)](https://huggingface.co/datasets/pleisto/wikipedia-cn-20230720-filtered)
 - [Pile (en)](https://huggingface.co/datasets/EleutherAI/pile)
 - [SkyPile (zh)](https://huggingface.co/datasets/Skywork/SkyPile-150B)
+- [FineWeb (en)](https://huggingface.co/datasets/HuggingFaceFW/fineweb)
+- [FineWeb-Edu (en)](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu)
 - [The Stack (en)](https://huggingface.co/datasets/bigcode/the-stack)
 - [StarCoder (en)](https://huggingface.co/datasets/bigcode/starcoderdata)
 
@@ -270,6 +275,7 @@ https://github.com/hiyouga/LLaMA-Factory/assets/16256802/ec36a9dd-37f4-4f72-81bd
 <details><summary>偏好数据集</summary>
 
 - [DPO mixed (en&zh)](https://huggingface.co/datasets/hiyouga/DPO-En-Zh-20k)
+- [UltraFeedback (en)](https://huggingface.co/datasets/HuggingFaceH4/ultrafeedback_binarized)
 - [Orca DPO Pairs (en)](https://huggingface.co/datasets/Intel/orca_dpo_pairs)
 - [HH-RLHF (en)](https://huggingface.co/datasets/Anthropic/hh-rlhf)
 - [Nectar (en)](https://huggingface.co/datasets/berkeley-nest/Nectar)
@@ -289,21 +295,21 @@ huggingface-cli login
 
 | 必需项       | 至少     | 推荐      |
 | ------------ | ------- | --------- |
-| python       | 3.8     | 3.10      |
-| torch        | 1.13.1  | 2.2.0     |
-| transformers | 4.37.2  | 4.41.0    |
-| datasets     | 2.14.3  | 2.19.1    |
-| accelerate   | 0.27.2  | 0.30.1    |
-| peft         | 0.9.0   | 0.11.1    |
-| trl          | 0.8.2   | 0.8.6     |
+| python       | 3.8     | 3.11      |
+| torch        | 1.13.1  | 2.3.0     |
+| transformers | 4.41.2  | 4.41.2    |
+| datasets     | 2.16.0  | 2.19.2    |
+| accelerate   | 0.30.1  | 0.30.1    |
+| peft         | 0.11.1  | 0.11.1    |
+| trl          | 0.8.6   | 0.9.4     |
 
 | 可选项       | 至少     | 推荐      |
 | ------------ | ------- | --------- |
 | CUDA         | 11.6    | 12.2      |
 | deepspeed    | 0.10.0  | 0.14.0    |
 | bitsandbytes | 0.39.0  | 0.43.1    |
-| vllm         | 0.4.0   | 0.4.2     |
-| flash-attn   | 2.3.0   | 2.5.8     |
+| vllm         | 0.4.3   | 0.4.3     |
+| flash-attn   | 2.3.0   | 2.5.9     |
 
 ### 硬件依赖
 
@@ -329,7 +335,7 @@ huggingface-cli login
 ```bash
 git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
 cd LLaMA-Factory
-pip install -e .[torch,metrics]
+pip install -e ".[torch,metrics]"
 ```
 
 可选的额外依赖项：torch、torch_npu、metrics、deepspeed、bitsandbytes、vllm、galore、badam、gptq、awq、aqlm、qwen、modelscope、quality
@@ -353,7 +359,7 @@ pip install https://github.com/jllllll/bitsandbytes-windows-webui/releases/downl
 
 加入 [NPU 用户群](assets/wechat_npu.jpg)。
 
-在昇腾 NPU 设备上安装 LLaMA Factory 时，需要指定额外依赖项，使用 `pip install -e .[torch_npu,metrics]` 命令安装。此外，还需要安装 **[Ascend CANN Toolkit and Kernels](https://www.hiascend.com/developer/download/community/result?module=cann)**，安装方法请参考[安装教程](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC2alpha002/quickstart/quickstart/quickstart_18_0004.html)或使用以下命令：
+在昇腾 NPU 设备上安装 LLaMA Factory 时，需要指定额外依赖项，使用 `pip install -e '.[torch-npu,metrics]'` 命令安装。此外，还需要安装 **[Ascend CANN Toolkit and Kernels](https://www.hiascend.com/developer/download/community/result?module=cann)**，安装方法请参考[安装教程](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC2alpha002/quickstart/quickstart/quickstart_18_0004.html)或使用以下命令：
 
 ```bash
 # 请替换 URL 为 CANN 版本和设备型号对应的 URL
@@ -399,9 +405,9 @@ Docker 镜像：
 下面三行命令分别对 Llama3-8B-Instruct 模型进行 LoRA **微调**、**推理**和**合并**。
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 llamafactory-cli train examples/lora_single_gpu/llama3_lora_sft.yaml
-CUDA_VISIBLE_DEVICES=0 llamafactory-cli chat examples/inference/llama3_lora_sft.yaml
-CUDA_VISIBLE_DEVICES=0 llamafactory-cli export examples/merge_lora/llama3_lora_sft.yaml
+llamafactory-cli train examples/lora_single_gpu/llama3_lora_sft.yaml
+llamafactory-cli chat examples/inference/llama3_lora_sft.yaml
+llamafactory-cli export examples/merge_lora/llama3_lora_sft.yaml
 ```
 
 高级用法请参考 [examples/README_zh.md](examples/README_zh.md)（包括多 GPU 微调）。
@@ -411,32 +417,33 @@ CUDA_VISIBLE_DEVICES=0 llamafactory-cli export examples/merge_lora/llama3_lora_s
 
 ### LLaMA Board 可视化微调（由 [Gradio](https://github.com/gradio-app/gradio) 驱动）
 
-#### 使用本地环境
-
 ```bash
-CUDA_VISIBLE_DEVICES=0 GRADIO_SHARE=1 llamafactory-cli webui
+llamafactory-cli webui
 ```
 
-#### 使用 Docker
+### 构建 Docker
 
 ```bash
-docker build -f ./Dockerfile -t llama-factory:latest .
-docker run --gpus=all \
+docker build -f ./Dockerfile \
+    --build-arg INSTALL_BNB=false \
+    --build-arg INSTALL_VLLM=false \
+    --build-arg INSTALL_DEEPSPEED=false \
+    --build-arg PIP_INDEX=https://pypi.org/simple \
+    -t llamafactory:latest .
+
+docker run -it --gpus=all \
     -v ./hf_cache:/root/.cache/huggingface/ \
     -v ./data:/app/data \
     -v ./output:/app/output \
-    -e CUDA_VISIBLE_DEVICES=0 \
     -p 7860:7860 \
+    -p 8000:8000 \
     --shm-size 16G \
-    --name llama_factory \
-    -d llama-factory:latest
+    --name llamafactory \
+    llamafactory:latest
 ```
 
-#### 使用 Docker Compose
-
-```bash
-docker compose -f ./docker-compose.yml up -d
-```
+> [!TIP]
+> 通过 `docker compose up -d` 使用 Docker Compose 构建镜像。
 
 <details><summary>数据卷详情</summary>
 
