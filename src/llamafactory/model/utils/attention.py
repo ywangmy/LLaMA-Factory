@@ -30,6 +30,8 @@ def configure_attn_implementation(config: "PretrainedConfig", model_args: "Model
         if not is_flash_attn2_available():
             logger.warning("FlashAttention-2 is not installed.")
             return
+        else:
+            logger.info("Using FlashAttention-2 for faster training and inference.")
 
         requested_attn_implementation = "flash_attention_2"
     else:

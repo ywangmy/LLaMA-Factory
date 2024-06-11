@@ -186,10 +186,27 @@ def get_dataset(
         if training_args.should_log:
             try:
                 print_function(next(iter(dataset)))
+                lengths = dict()
+                for example in dataset:
+                    for key in ['chosen_input_ids', 'rejected_input_ids']:
+                        if not f'{key}_length' in lengths:
+                            lengths[f'{key}_length'] = []
+                        lengths[f'{key}_length'].append(len(example[key]))
+                        # if key == 'chosen_input_ids':
+                        #     decoded = tokenizer.decode(example[key], skip_special_tokens=False)
+                        #     if len(example[key]) >= 2048:
+                        #         print(f"Chosen >= 2048 ({len(example[key])}): [{decoded}]")
+                        #     elif not '<|eot_id|>' in decoded:
+                        #         print(f"Chosen no EOT ({len(example[key])}): [{decoded}]")
+                        
+                for key in lengths.keys():
+                    count = len([x for x in lengths[key] if x >= 2048])
+                    print(f"[{key}] length:\nMax:{max(lengths[key])}\nAverage:{sum(lengths[key])/len(lengths[key])}\n#>=2048:{count}")
+                
             except StopIteration:
                 if stage == "pt":
                     raise RuntimeError("Cannot find sufficient samples, consider increasing dataset size.")
                 else:
                     raise RuntimeError("Cannot find valid samples, check `data/README.md` for the data format.")
-
+            # exit()
         return dataset
