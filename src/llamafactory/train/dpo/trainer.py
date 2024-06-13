@@ -177,6 +177,9 @@ class CustomDPOTrainer(DPOTrainer):
         elif self.loss_type == "ipo":
             # eqn (17) of the paper where beta is the regularization parameter for the IPO loss, denoted by tau in the paper.
             losses = (logits - 1 / (2 * self.beta)) ** 2
+        elif self.loss_type == "my_ipo":
+            # See the paragraph below eqn (4) of https://arxiv.org/pdf/2406.02900, g(x) = (x - 1) ^2
+            losses = (self.beta * logits - 1) ** 2
         elif self.loss_type == "kto_pair":
             # eqn (7) of the HALOs paper
             chosen_KL = (policy_chosen_logps - reference_chosen_logps).mean().clamp(min=0)

@@ -122,7 +122,7 @@ class RLHFArguments:
         default=0.0,
         metadata={"help": "The supervised fine-tuning loss coefficient in DPO training."},
     )
-    pref_loss: Literal["sigmoid", "hinge", "ipo", "kto_pair", "orpo", "simpo", "rdpo", "modpo"] = field(
+    pref_loss: Literal["sigmoid", "hinge", "ipo", "my_ipo", "kto_pair", "orpo", "simpo", "rdpo", "modpo"] = field(
         default="sigmoid",
         metadata={"help": "The type of DPO loss to use."},
     )
