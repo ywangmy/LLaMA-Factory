@@ -1,8 +1,23 @@
+# Copyright 2024 the LlamaFactory team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import random
 
 import pytest
 from datasets import load_dataset
+from transformers import AutoTokenizer
 
 from llamafactory.data import get_dataset
 from llamafactory.hparams import get_train_args
@@ -27,17 +42,18 @@ TRAIN_ARGS = {
 }
 
 
-@pytest.mark.parametrize("num_samples", [10])
+@pytest.mark.parametrize("num_samples", [16])
 def test_supervised(num_samples: int):
     model_args, data_args, training_args, _, _ = get_train_args(TRAIN_ARGS)
     tokenizer_module = load_tokenizer(model_args)
     tokenizer = tokenizer_module["tokenizer"]
     tokenized_data = get_dataset(model_args, data_args, training_args, stage="sft", **tokenizer_module)
 
+    ref_tokenizer = AutoTokenizer.from_pretrained(TINY_LLAMA)
+
     original_data = load_dataset(TRAIN_ARGS["dataset"], split="train")
     indexes = random.choices(range(len(original_data)), k=num_samples)
     for index in indexes:
-        decoded_result = tokenizer.decode(tokenized_data["input_ids"][index])
         prompt = original_data[index]["instruction"]
         if original_data[index]["input"]:
             prompt += "\n" + original_data[index]["input"]
@@ -46,5 +62,6 @@ def test_supervised(num_samples: int):
             {"role": "user", "content": prompt},
             {"role": "assistant", "content": original_data[index]["output"]},
         ]
-        templated_result = tokenizer.apply_chat_template(messages, tokenize=False)
-        assert decoded_result == templated_result
+        templated_result = ref_tokenizer.apply_chat_template(messages, tokenize=False)
+        decoded_result = tokenizer.decode(tokenized_data["input_ids"][index])
+        assert templated_result == decoded_result
